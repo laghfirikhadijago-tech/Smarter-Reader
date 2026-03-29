@@ -15,7 +15,7 @@ if "full_text" not in st.session_state:
     st.session_state.full_text = ""
 
 st.title("💬 Smarter Reader Chat")
-st.subheader("تحدث مع ملف الـ PDF الخاص بك")
+st.subheader("Your smart assistant for reading and summarizing PDF files")
 
 # 3. الربط مع Groq
 if "GROQ_API_KEY" not in st.secrets:
