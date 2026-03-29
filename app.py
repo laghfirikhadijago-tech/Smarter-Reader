@@ -34,20 +34,20 @@ language = st.selectbox(
 
 # 5. إعدادات حسب اللغة
 if language == "العربية":
-    upload_label = "📂 قم بتنزيل الملف PDF"
-    question_label = "❓ اطرح سؤالك:"
+    upload_label = "📂  قم  بتنزيل  الملف  PDF"
+    question_label = " اطرح سؤالك"
     system_prompt = "أجب فقط بناءً على النص وباللغة العربية."
     tts_lang = "ar"
 
 elif language == "Français":
     upload_label = "📂 Téléchargez votre PDF"
-    question_label = "❓ Posez votre question :"
+    question_label = " Posez votre question "
     system_prompt = "Répondez uniquement en vous basant sur le texte fourni, en français."
     tts_lang = "fr"
 
 else:
     upload_label = "📂 Upload your PDF"
-    question_label = "❓ Ask your question:"
+    question_label = " Ask your question"
     system_prompt = "Answer only based on the provided text, in English."
     tts_lang = "en"
 
@@ -67,7 +67,7 @@ if uploaded_file:
     st.success("✅ File uploaded successfully")
 
     if len(text) > 5000:
-        st.warning("⚠️ The file is large; it will be processed in chunks")
+        st.warning(" The file is large it will be processed in chunks")
 
     user_question = st.text_input(question_label)
 
