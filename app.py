@@ -85,7 +85,7 @@ if uploaded_file:
                             {"role": "system", "content": system_prompt},
                             {"role": "user", "content": f"النص:\n{chunk}\n\nالسؤال:\n{user_question}"}
                         ],
-                        model="llama-3.3-70b-versatile",
+                        model="llama-3.1-8b-instant",
                     )
                     answers.append(chat_completion.choices[0].message.content)
 
