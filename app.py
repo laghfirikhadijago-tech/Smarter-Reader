@@ -6,7 +6,7 @@ import uuid
 import os
 
 # 1. Page Configuration
-st.set_page_config(page_title="Smarter Reader ", layout="wide")
+st.set_page_config(page_title="Smarter Reader ", layout="wide") 
 
 # 2. Memory Setup
 if "messages" not in st.session_state:
