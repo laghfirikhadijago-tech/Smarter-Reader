@@ -5,91 +5,76 @@ from gtts import gTTS
 import uuid
 import os
 
-# 1. إعدادات الصفحة
+# 1. إعدادات الصفحة والستايل
 st.set_page_config(page_title="Smarter Reader", layout="centered")
-
-# 2. ستايل بسيط
 st.markdown("""
     <style>
-    .main { text-align: right; }
-    .stButton>button { width: 100%; border-radius: 20px; }
+    .stButton>button { width: 100%; border-radius: 20px; background-color: #4CAF50; color: white; }
+    .stTextInput>div>div>input { background-color: #f0f2f6; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("Smarter Reader")
-st.subheader("Your smart assistant for reading and summarizing PDF files")
+st.title("📚 Smarter Reader")
+st.subheader("مساعدك الذكي لقراءة وتحليل ملفات PDF")
 
-# 3. التحقق من API KEY
+# 2. الربط مع Groq Cloud
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("خطأ: لم يتم العثور على GROQ_API_KEY في Secrets")
+    st.error("Missing GROQ_API_KEY in Secrets!")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# 4. اختيار اللغة
-language = st.selectbox(
-    "Choose Language",
-    ["العربية", "Français", "English"]
-)
+# 3. اختيار اللغة وتخصيص الواجهة
+language = st.selectbox("اختر لغة التواصل / Choose Language", ["العربية", "Français", "English"])
 
-# 5. إعدادات حسب اللغة
 if language == "العربية":
-    upload_label = "📂 قم بتنزيل الملف PDF"
-    question_label = "اطرح سؤالك"
-    system_prompt = "أنت مساعد ذكي. أجب فقط بناءً على النص وباللغة العربية."
+    labels = {"up": "📂 ارفع ملف PDF", "q": "ما هو سؤالك حول الملف؟", "sys": "أجب بدقة وباللغة العربية.", "wait": "جاري التفكير...", "res": "الإجابة:"}
     tts_lang = "ar"
 elif language == "Français":
-    upload_label = "📂 Téléchargez votre PDF"
-    question_label = "Posez votre question"
-    system_prompt = "Répondez uniquement en vous basant sur le texte fourni, en français."
+    labels = {"up": "📂 Charger le PDF", "q": "Quelle est votre question ?", "sys": "Réponدي en Français.", "wait": "Réflexion...", "res": "Réponse :"}
     tts_lang = "fr"
 else:
-    upload_label = "📂 Upload your PDF"
-    question_label = "Ask your question"
-    system_prompt = "Answer only based on the provided text, in English."
+    labels = {"up": "📂 Upload PDF", "q": "What is your question?", "sys": "Answer in English.", "wait": "Thinking...", "res": "Answer:"}
     tts_lang = "en"
 
-# 6. رفع الملف
-uploaded_file = st.file_uploader(upload_label, type="pdf")
+# 4. معالجة الملف
+uploaded_file = st.file_uploader(labels["up"], type="pdf")
 
 if uploaded_file:
+    # استخراج النص
     pdf_reader = PyPDF2.PdfReader(uploaded_file)
-    text = ""
-    for page in pdf_reader.pages:
-        page_text = page.extract_text()
-        if page_text:
-            text += page_text + "\n"
+    full_text = "\n".join([page.extract_text() for page in pdf_reader.pages if page.extract_text()])
+    
+    st.success("✅ File Ready!")
 
-    st.success("✅ File uploaded successfully")
-
-    user_question = st.text_input(question_label)
+    # 5. خانة السؤال (وضعناها هنا لتبقى ثابتة)
+    user_question = st.text_input(labels["q"], placeholder="Enter your question here...", key="main_q")
 
     if user_question:
-        with st.spinner("Thinking..."):
+        with st.spinner(labels["wait"]):
             try:
-                # إرسال النص (أول 15 ألف حرف) لضمان السرعة والدقة
-                chat_completion = client.chat.completions.create(
+                # طلب الإجابة من الموديل السريع
+                response = client.chat.completions.create(
                     messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": f"النص:\n{text[:15000]}\n\nالسؤال:\n{user_question}"}
+                        {"role": "system", "content": labels["sys"]},
+                        {"role": "user", "content": f"Text: {full_text[:15000]}\n\nQuestion: {user_question}"}
                     ],
                     model="llama-3.1-8b-instant",
                 )
                 
-                final_answer = chat_completion.choices[0].message.content
+                answer = response.choices[0].message.content
+                st.markdown(f"### {labels['res']}")
+                st.info(answer)
 
-                st.markdown("### The answer:")
-                st.write(final_answer)
-
-                # تحويل الإجابة لصوت
-                filename = f"response_{uuid.uuid4()}.mp3"
-                tts = gTTS(text=final_answer, lang=tts_lang)
-                tts.save(filename)
-                st.audio(filename)
-
-                # حذف ملف الصوت المؤقت
-                if os.path.exists(filename):
-                    os.remove(filename)
+                # 6. تحويل الإجابة لصوت
+                audio_file = f"speech_{uuid.uuid4()}.mp3"
+                tts = gTTS(text=answer, lang=tts_lang)
+                tts.save(audio_file)
+                st.audio(audio_file)
+                os.remove(audio_file)
 
             except Exception as e:
-                st.error(f"❌ حدث خطأ: {e}")
+                st.error(f"Error: {e}")
+
+st.divider()
+st.caption("Developed with ❤️ by Khadija")
