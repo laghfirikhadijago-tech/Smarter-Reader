@@ -1,6 +1,6 @@
 import streamlit as st
 from groq import Groq
-import PyPDF2
+import pdfplumber
 from gtts import gTTS
 import uuid
 import os
@@ -16,7 +16,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title(" Smarter Reader")
+st.title("Smarter Reader")
 st.subheader("Your smart assistant for reading and summarizing PDF files")
 
 # 3. التحقق من API KEY
@@ -28,13 +28,13 @@ client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 # 4. اختيار اللغة
 language = st.selectbox(
-    " Choose Language",
+    "Choose Language",
     ["العربية", "Français", "English"]
 )
 
 # 5. إعدادات حسب اللغة
 if language == "العربية":
-    upload_label = "📂قم بتنزيل الملف PDF"
+    upload_label = "📂 قم بتنزيل الملف PDF"
     question_label = "❓ اطرح سؤالك:"
     system_prompt = "أجب فقط بناءً على النص وباللغة العربية."
     tts_lang = "ar"
@@ -55,52 +55,52 @@ else:
 uploaded_file = st.file_uploader(upload_label, type="pdf")
 
 if uploaded_file:
-    pdf_reader = PyPDF2.PdfReader(uploaded_file)
     text = ""
+    with pdfplumber.open(uploaded_file) as pdf:
+        for page in pdf.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
 
-    # استخراج النص
-    for page in pdf_reader.pages:
-        page_text = page.extract_text()
-        if page_text:
-            text += page_text
+    st.success("✅ File uploaded successfully")
 
-    st.success(" ✅ File uploaded successfully")
-
-    # تحذير إذا الملف كبير
     if len(text) > 5000:
-        st.warning("⚠️ The file is too large only part of it will be analyzed")
+        st.warning("⚠️ The file is large; it will be processed in chunks")
 
-    # إدخال السؤال
     user_question = st.text_input(question_label)
 
     if user_question:
-        with st.spinner("Thinking… "):
+        with st.spinner("Thinking…"):
             try:
-                chat_completion = client.chat.completions.create(
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {
-                            "role": "user",
-                            "content": f"النص:\n{text[:5000]}\n\nالسؤال:\n{user_question}"
-                        }
-                    ],
-                    model="llama3-8b-8192",
-                )
+                # تقسيم النص إلى chunks صغيرة إذا كان كبير
+                chunk_size = 2000
+                chunks = [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
+                answers = []
 
-                answer = chat_completion.choices[0].message.content
+                for chunk in chunks:
+                    chat_completion = client.chat.completions.create(
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": f"النص:\n{chunk}\n\nالسؤال:\n{user_question}"}
+                        ],
+                        model="llama3-8b-8192",
+                    )
+                    answers.append(chat_completion.choices[0].message.content)
 
-                st.markdown("### The answer :")
-                
-                st.write(ansrwer)
+                # دمج الإجابات
+                final_answer = " ".join(answers)
 
-                # تحويل لصوت
+                st.markdown("### The answer:")
+                st.write(final_answer)
+
+                # تحويل الإجابة لصوت
                 filename = f"response_{uuid.uuid4()}.mp3"
-                tts = gTTS(text=answer, lang=tts_lang)
+                tts = gTTS(text=final_answer, lang=tts_lang)
                 tts.save(filename)
 
                 st.audio(filename)
 
-                # حذف الملف بعد الاستعمال (اختياري)
+                # حذف الملف بعد الاستعمال
                 if os.path.exists(filename):
                     os.remove(filename)
 
