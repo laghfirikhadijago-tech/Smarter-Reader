@@ -77,4 +77,4 @@ if uploaded_file:
                 st.error(f"Error: {e}")
 
 st.divider()
-st.caption("Developed with ❤️ by Khadija")
+st.caption("Developed with Khadija")
