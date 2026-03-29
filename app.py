@@ -1,148 +1,107 @@
-import gradio as gr
+import streamlit as st
 from groq import Groq
 import PyPDF2
 from gtts import gTTS
+import uuid
+import os
 
-# -------------------------
-# 1️⃣ إعداد Groq
-# -------------------------
+# 1. إعدادات الصفحة
+st.set_page_config(page_title="Smarter Reader", page_icon="📚", layout="centered")
+
+# 2. ستايل بسيط
+st.markdown("""
+    <style>
+    .main { text-align: right; }
+    .stButton>button { width: 100%; border-radius: 20px; }
+    </style>
+    """, unsafe_allow_html=True)
+
+st.title("📚 Smarter Reader")
+st.subheader("مساعدك الذكي لقراءة وتلخيص ملفات PDF")
+
+# 3. التحقق من API KEY
+if "GROQ_API_KEY" not in st.secrets:
+    st.error("خطأ: لم يتم العثور على GROQ_API_KEY في Secrets")
+    st.stop()
+
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# -------------------------
-# 2️⃣ قراءة PDF كامل
-# -------------------------
-def get_pdf_text(file):
-    if file is None: return ""
-    try:
-        reader = PyPDF2.PdfReader(file.name)
-        text = ""
-        for page in reader.pages:
-            content = page.extract_text()
-            if content: text += content + "\n"
-        return text
-    except:
-        return ""
+# 4. اختيار اللغة
+language = st.selectbox(
+    "🌍 اختر اللغة / Choose Language",
+    ["العربية", "Français", "English"]
+)
 
-# -------------------------
-# 3️⃣ اكتشاف لغة المستخدم
-# -------------------------
-def detect_language(text):
-    arabic_chars = "اأإآءبتثجحخدذرزسشصضطظعغفقكلمنهوي"
-    return "arabic" if any(c in arabic_chars for c in text) else "english"
+# 5. إعدادات حسب اللغة
+if language == "العربية":
+    upload_label = "📂 ارفع ملف PDF"
+    question_label = "❓ اطرح سؤالك:"
+    system_prompt = "أجب فقط بناءً على النص وباللغة العربية."
+    tts_lang = "ar"
 
-# -------------------------
-# 4️⃣ تلخيص PDF كامل
-# -------------------------
-def summarize_pdf(document):
-    system_prompt = f"""
-You are Khadija's Smart Reader.
-Summarize the following text in a concise way in Arabic/Darija if the text contains Arabic, otherwise English.
-Text:
-{document[:8000]}
-"""
-    try:
-        res = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "system", "content": system_prompt}],
-            temperature=0.2
-        )
-        return res.choices[0].message.content
-    except:
-        return "❌ Unable to summarize PDF"
+elif language == "Français":
+    upload_label = "📂 Téléchargez votre PDF"
+    question_label = "❓ Posez votre question :"
+    system_prompt = "Répondez uniquement en vous basant sur le texte fourni, en français."
+    tts_lang = "fr"
 
-# -------------------------
-# 5️⃣ الدردشة مع PDF
-# -------------------------
-def chat_khadija(message, history, pdf_file, voice=False):
-    if pdf_file is None:
-        return history + [("⚠️", "خديجة، حطي PDF الأول")], None
+else:
+    upload_label = "📂 Upload your PDF"
+    question_label = "❓ Ask your question:"
+    system_prompt = "Answer only based on the provided text, in English."
+    tts_lang = "en"
 
-    document = get_pdf_text(pdf_file)
-    if not document:
-        return history + [("❌", "ماقدرتش نقرا الملف")], None
+# 6. رفع الملف
+uploaded_file = st.file_uploader(upload_label, type="pdf")
 
-    user_lang = detect_language(message)
+if uploaded_file:
+    pdf_reader = PyPDF2.PdfReader(uploaded_file)
+    text = ""
 
-    # context-relevant: نجيب الجمل اللي فيها كلمات السؤال
-    lines = document.split("\n")
-    question_words = set(message.lower().split())
-    context_lines = [line for line in lines if set(line.lower().split()) & question_words]
-    context = "\n".join(context_lines[:30]) or document[:1000]
+    # استخراج النص
+    for page in pdf_reader.pages:
+        page_text = page.extract_text()
+        if page_text:
+            text += page_text
 
-    system_prompt = f"""
-You are Khadija's Smart Reader.
-Respond ONLY in the same language as the user: {user_lang}.
-Use ONLY the context below.
-Be concise, clear, and smart.
-CONTEXT:
-{context}
-"""
+    st.success("✅ تم رفع الملف بنجاح!")
 
-    messages = [{"role": "system", "content": system_prompt}]
-    for u, a in history:
-        messages.append({"role": "user", "content": u})
-        messages.append({"role": "assistant", "content": a})
-    messages.append({"role": "user", "content": message})
+    # تحذير إذا الملف كبير
+    if len(text) > 5000:
+        st.warning("⚠️ الملف كبير، سيتم تحليل جزء منه فقط")
 
-    try:
-        res = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=messages,
-            temperature=0.2
-        )
-        answer = res.choices[0].message.content
+    # إدخال السؤال
+    user_question = st.text_input(question_label)
 
-        audio_path = None
-        if voice:
-            tts = gTTS(text=answer, lang='ar' if user_lang=='arabic' else 'en')
-            audio_path = "/content/res.mp3"
-            tts.save(audio_path)
+    if user_question:
+        with st.spinner("⏳ جاري التفكير..."):
+            try:
+                chat_completion = client.chat.completions.create(
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {
+                            "role": "user",
+                            "content": f"النص:\n{text[:5000]}\n\nالسؤال:\n{user_question}"
+                        }
+                    ],
+                    model="llama3-8b-8192",
+                )
 
-        history.append((message, answer))
-        return history, audio_path
-    except Exception as e:
-        history.append((message, f"❌ Error: {str(e)}"))
-        return history, None
+                answer = chat_completion.choices[0].message.content
 
-# -------------------------
-# 6️⃣ واجهة Gradio
-# -------------------------
-with gr.Blocks() as demo:
-    gr.HTML("<h1 style='text-align:center;'>  Smarter Reader </h1>")
+                st.markdown("### 📌 الإجابة:")
+                st.write(answer)
 
-    with gr.Row():
-        pdf_input = gr.File(label="📄 Upload PDF", file_types=[".pdf"])
-        voice_opt = gr.Checkbox(label="🔊 تفعيل الصوت", value=False)
+                # تحويل لصوت
+                filename = f"response_{uuid.uuid4()}.mp3"
+                tts = gTTS(text=answer, lang=tts_lang)
+                tts.save(filename)
 
-    chatbot = gr.Chatbot(height=450)
-    audio_output = gr.Audio(type="filepath", interactive=False)
+                st.audio(filename)
 
-    with gr.Row():
-        msg = gr.Textbox(placeholder="اسال عن الكتاب...")
-        submit = gr.Button("إرسال")
+                # حذف الملف بعد الاستعمال (اختياري)
+                if os.path.exists(filename):
+                    os.remove(filename)
 
-
-    # وظيفة إرسال السؤال
-    def user_msg(message, history):
-        return "", history + [(message, None)]
-
-    def bot_res(history, pdf, voice):
-        user_message = history[-1][0]
-        new_history, audio = chat_khadija(user_message, history[:-1], pdf, voice)
-        return new_history, audio
-
-    # وظيفة تلخيص كامل PDF
-    def summarize(pdf):
-        document = get_pdf_text(pdf)
-        summary = summarize_pdf(document)
-        return summary
-
-    msg.submit(user_msg, [msg, chatbot], [msg, chatbot], queue=False).then(
-        bot_res, [chatbot, pdf_input, voice_opt], [chatbot, audio_output]
-    )
-    submit.click(user_msg, [msg, chatbot], [msg, chatbot], queue=False).then(
-        bot_res, [chatbot, pdf_input, voice_opt], [chatbot, audio_output]
-    )
-    summarize_btn.click(summarize, [pdf_input], [chatbot])
-
-demo.launch(share=True)
+            except Exception as e:
+                st.error(f"❌ حدث خطأ: {e}")
