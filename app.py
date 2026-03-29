@@ -14,7 +14,7 @@ if "messages" not in st.session_state:
 if "full_text" not in st.session_state:
     st.session_state.full_text = ""
 
-st.title("📄 Smarter Reader Pro")
+st.title(" Smarter Reader ")
 
 # 3. Groq Connection
 if "GROQ_API_KEY" not in st.secrets:
