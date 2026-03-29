@@ -34,7 +34,7 @@ language = st.selectbox(
 
 # 5. إعدادات حسب اللغة
 if language == "العربية":
-    upload_label = "📂 ارفع ملف PDF"
+    upload_label = "📂 Upload your PDF"
     question_label = "❓ اطرح سؤالك:"
     system_prompt = "أجب فقط بناءً على النص وباللغة العربية."
     tts_lang = "ar"
