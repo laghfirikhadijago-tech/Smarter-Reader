@@ -71,26 +71,19 @@ if uploaded_file:
 
     user_question = st.text_input(question_label)
 
-    if user_question:
+   if user_question:
         with st.spinner("Thinking…"):
             try:
-                # تقسيم النص إلى chunks صغيرة إذا كان كبير
-                chunk_size = 2000
-                chunks = [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
-                answers = []
-
-                for chunk in chunks:
-                    chat_completion = client.chat.completions.create(
-                        messages=[
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": f"النص:\n{chunk}\n\nالسؤال:\n{user_question}"}
-                        ],
-                        model="llama-3.1-8b-instant",
-                    )
-                    answers.append(chat_completion.choices[0].message.content)
-
-                # دمج الإجابات
-                final_answer = " ".join(answers)
+                # إرسال النص كامل في طلب واحد (أسرع بـ 10 مرات)
+                chat_completion = client.chat.completions.create(
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": f"النص المستخرج:\n{text[:15000]}\n\nالسؤال:\n{user_question}"}
+                    ],
+                    model="llama-3.1-8b-instant",
+                )
+                
+                final_answer = chat_completion.choices[0].message.content
 
                 st.markdown("### The answer:")
                 st.write(final_answer)
@@ -99,10 +92,8 @@ if uploaded_file:
                 filename = f"response_{uuid.uuid4()}.mp3"
                 tts = gTTS(text=final_answer, lang=tts_lang)
                 tts.save(filename)
-
                 st.audio(filename)
 
-                # حذف الملف بعد الاستعمال
                 if os.path.exists(filename):
                     os.remove(filename)
 
