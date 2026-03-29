@@ -8,10 +8,10 @@ import os
 client = Groq(api_key="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")
 
 # إعدادات الصفحة الاحترافية
-st.set_page_config(page_title="Khadija Smart Reader PRO", layout="wide", page_icon="🚀")
+st.set_page_config(page_title="Smarter Reader", layout="wide")
 
 # تصميم الواجهة
-st.title("🚀 Khadija's Smart Reader PRO")
+st.title(" Smarter Reader ")
 st.markdown("---")
 
 # القائمة الجانبية لإدارة الملفات
