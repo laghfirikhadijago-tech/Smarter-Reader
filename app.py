@@ -1,5 +1,3 @@
-!pip install gradio groq PyPDF2 gTTS --quiet
-
 import gradio as gr
 from groq import Groq
 import PyPDF2
