@@ -6,7 +6,7 @@ import uuid
 import os
 
 # 1. إعدادات الصفحة
-st.set_page_config(page_title="Smarter Reader", page_icon="📚", layout="centered")
+st.set_page_config(page_title="Smarter Reader", layout="centered")
 
 # 2. ستايل بسيط
 st.markdown("""
@@ -16,8 +16,8 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("📚 Smarter Reader")
-st.subheader("مساعدك الذكي لقراءة وتلخيص ملفات PDF")
+st.title(" Smarter Reader")
+st.subheader("Your smart assistant for reading and summarizing PDF files")
 
 # 3. التحقق من API KEY
 if "GROQ_API_KEY" not in st.secrets:
@@ -28,7 +28,7 @@ client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 # 4. اختيار اللغة
 language = st.selectbox(
-    "🌍 اختر اللغة / Choose Language",
+    " Choose Language",
     ["العربية", "Français", "English"]
 )
 
@@ -64,17 +64,17 @@ if uploaded_file:
         if page_text:
             text += page_text
 
-    st.success("✅ تم رفع الملف بنجاح!")
+    st.success(" ✅ File uploaded successfully")
 
     # تحذير إذا الملف كبير
     if len(text) > 5000:
-        st.warning("⚠️ الملف كبير، سيتم تحليل جزء منه فقط")
+        st.warning("⚠️ The file is too large only part of it will be analyzed")
 
     # إدخال السؤال
     user_question = st.text_input(question_label)
 
     if user_question:
-        with st.spinner("⏳ جاري التفكير..."):
+        with st.spinner("Thinking… "):
             try:
                 chat_completion = client.chat.completions.create(
                     messages=[
@@ -89,8 +89,9 @@ if uploaded_file:
 
                 answer = chat_completion.choices[0].message.content
 
-                st.markdown("### 📌 الإجابة:")
-                st.write(answer)
+                st.markdown("### The answer :")
+                
+                st.write(ansrwer)
 
                 # تحويل لصوت
                 filename = f"response_{uuid.uuid4()}.mp3"
