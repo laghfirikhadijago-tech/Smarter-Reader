@@ -1,6 +1,6 @@
 import streamlit as st
 from groq import Groq
-import pdfplumber
+import PyPDF2
 from gtts import gTTS
 import uuid
 import os
@@ -55,12 +55,14 @@ else:
 uploaded_file = st.file_uploader(upload_label, type="pdf")
 
 if uploaded_file:
+    pdf_reader = PyPDF2.PdfReader(uploaded_file)
     text = ""
-    with pdfplumber.open(uploaded_file) as pdf:
-        for page in pdf.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text += page_text + "\n"
+
+    # استخراج النص من كل الصفحات
+    for page in pdf_reader.pages:
+        page_text = page.extract_text()
+        if page_text:
+            text += page_text + "\n"
 
     st.success("✅ File uploaded successfully")
 
