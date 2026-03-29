@@ -8,7 +8,7 @@ from gtts import gTTS
 # -------------------------
 # 1️⃣ إعداد Groq
 # -------------------------
-client = Groq(api_key="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")
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 # -------------------------
 # 2️⃣ قراءة PDF كامل
