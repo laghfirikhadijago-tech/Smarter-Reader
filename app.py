@@ -1,7 +1,7 @@
 import streamlit as st
 from groq import Groq
 import PyPDF2
-from gtts import gTTS
+from gtts import gTTS 
 import uuid
 import os
 
