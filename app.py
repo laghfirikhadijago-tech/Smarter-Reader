@@ -65,7 +65,8 @@ if prompt := st.chat_input("Ask a professional question..."):
                             {"role": "system", "content": instructions[target_lang]},
                             {"role": "user", "content": f"Based on this text: {st.session_state.full_text[:7000]}\n\nQuestion: {prompt}\n\nAnswer in a professional and summarized way:"}
                         ],
-                        model="llama-3.1-8b-instant",
+                        model="llama-3.3-70b-versatile",
+
                         temperature=0.0, # باش يكون دقيق وميخرفش
                         max_tokens=300   # باش يضطر يختصر وميعطيكش جريدة
                     )
