@@ -86,4 +86,4 @@ if prompt := st.chat_input("Ask a professional question..."):
                 except Exception as e:
                     st.error(f"Error: {e}")
     else:
-        st.warning("Upload PDF first.")
+        st.warning("Upload PDF first.") 
