@@ -1,0 +1,1 @@
+Smarter-Reader is a smart and innovative application designed to enhance and simplify the reading experience and text processing. Built with Python and powered by Streamlit to provide a smooth and interactive user interface.
